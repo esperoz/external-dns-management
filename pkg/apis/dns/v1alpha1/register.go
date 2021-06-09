@@ -36,6 +36,9 @@ const (
 	DNSEntryKind   = "DNSEntry"
 	DNSEntryPlural = "dnsentries"
 
+	DNSLockKind   = "DNSLock"
+	DNSLockPlural = "dnslocks"
+
 	DNSAnnotationKind   = "DNSAnnotation"
 	DNSAnnotationPlural = "dnsannotations"
 )
@@ -68,6 +71,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&DNSEntry{},
 		&DNSEntryList{},
 		&DNSAnnotation{},
+		&DNSLock{},
+		&DNSLockList{},
 		&DNSAnnotationList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

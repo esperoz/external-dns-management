@@ -34,6 +34,14 @@ type DNSEntryListerExpansion interface{}
 // DNSEntryNamespaceLister.
 type DNSEntryNamespaceListerExpansion interface{}
 
+// DNSLockListerExpansion allows custom methods to be added to
+// DNSLockLister.
+type DNSLockListerExpansion interface{}
+
+// DNSLockNamespaceListerExpansion allows custom methods to be added to
+// DNSLockNamespaceLister.
+type DNSLockNamespaceListerExpansion interface{}
+
 // DNSOwnerListerExpansion allows custom methods to be added to
 // DNSOwnerLister.
 type DNSOwnerListerExpansion interface{}

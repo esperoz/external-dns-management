@@ -22,6 +22,8 @@ type DNSAnnotationExpansion interface{}
 
 type DNSEntryExpansion interface{}
 
+type DNSLockExpansion interface{}
+
 type DNSOwnerExpansion interface{}
 
 type DNSProviderExpansion interface{}

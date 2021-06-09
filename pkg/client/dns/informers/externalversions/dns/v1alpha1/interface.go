@@ -28,6 +28,8 @@ type Interface interface {
 	DNSAnnotations() DNSAnnotationInformer
 	// DNSEntries returns a DNSEntryInformer.
 	DNSEntries() DNSEntryInformer
+	// DNSLocks returns a DNSLockInformer.
+	DNSLocks() DNSLockInformer
 	// DNSOwners returns a DNSOwnerInformer.
 	DNSOwners() DNSOwnerInformer
 	// DNSProviders returns a DNSProviderInformer.
@@ -53,6 +55,11 @@ func (v *version) DNSAnnotations() DNSAnnotationInformer {
 // DNSEntries returns a DNSEntryInformer.
 func (v *version) DNSEntries() DNSEntryInformer {
 	return &dNSEntryInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// DNSLocks returns a DNSLockInformer.
+func (v *version) DNSLocks() DNSLockInformer {
+	return &dNSLockInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // DNSOwners returns a DNSOwnerInformer.
