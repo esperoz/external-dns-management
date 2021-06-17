@@ -41,6 +41,8 @@ rules:
   - dnsannotations/status
   - dnsowners
   - dnsowners/status
+  - dnslocks
+  - dnslocks/status
   verbs:
   - get
   - list
@@ -72,3 +74,11 @@ rules:
   - {{ include "external-dns-management.fullname" . }}
   verbs:
   - use
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  resourceNames:
+  - "cluster-identity"
+  verbs:
+  - get
