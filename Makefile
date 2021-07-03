@@ -1,7 +1,7 @@
-REGISTRY              := eu.gcr.io/gardener-project
+REGISTRY              := quay.io/esperoz
 EXECUTABLE            := dns-controller-manager
 PROJECT               := github.com/gardener/external-dns-management
-IMAGE_REPOSITORY      := $(REGISTRY)/dns-controller-manager
+IMAGE_REPOSITORY      := $(REGISTRY)/extdns
 VERSION               := $(shell cat VERSION)
 IMAGE_TAG             := $(VERSION)
 EFFECTIVE_VERSION     := $(VERSION)-$(shell git rev-parse HEAD)

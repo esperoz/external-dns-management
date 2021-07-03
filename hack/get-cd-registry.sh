@@ -6,4 +6,5 @@
 
 set -e
 
-echo "eu.gcr.io/sap-se-gcr-k8s-private/cnudie/gardener/development"
+#echo "eu.gcr.io/sap-se-gcr-k8s-private/cnudie/gardener/development"
+echo "quay.io/esperoz/extdns"
