@@ -39,10 +39,10 @@ type Handler struct {
 }
 
 type PowerDNSConfig struct {
-	server     *string `json:"host,omitempty"`
-	vhost      *string `json:"vhost,omitempty"`
-	apikey     *string `json:"apikey,omitempty"`
-	basedomain *string `json:"basedomain,omitempty"`
+	Server     *string `json:"host,omitempty"`
+	VHost      *string `json:"vhost,omitempty"`
+	APIKey     *string `json:"apikey,omitempty"`
+	Basedomain *string `json:"basedomain,omitempty"`
 }
 
 var _ provider.DNSHandler = &Handler{}
@@ -54,19 +54,19 @@ func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) 
 
 	var err error
 
-	if err := config.FillRequiredProperty(&pdnsconfig.server, "SERVER", "server"); err != nil {
+	if err := config.FillRequiredProperty(&pdnsconfig.Server, "SERVER", "server"); err != nil {
 		return nil, err
 	}
 
-	if err := config.FillRequiredProperty(&pdnsconfig.vhost, "VHOST", "vhost"); err != nil {
+	if err := config.FillRequiredProperty(&pdnsconfig.VHost, "VHOST", "vhost"); err != nil {
 		return nil, err
 	}
 
-	if err := config.FillRequiredProperty(&pdnsconfig.apikey, "APIKEY", "apikey"); err != nil {
+	if err := config.FillRequiredProperty(&pdnsconfig.APIKey, "APIKEY", "apikey"); err != nil {
 		return nil, err
 	}
 
-	if err := config.FillRequiredProperty(&pdnsconfig.basedomain, "BASEDOMAIN", "basedomain"); err != nil {
+	if err := config.FillRequiredProperty(&pdnsconfig.Basedomain, "BASEDOMAIN", "basedomain"); err != nil {
 		return nil, err
 	}
 

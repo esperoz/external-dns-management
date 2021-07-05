@@ -46,12 +46,12 @@ type PowerDNSExecMan struct {
 func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider.Metrics) *PowerDNSExecMan {
 	execman := &PowerDNSExecMan{
 		logger:  logger,
-		base:    *cfg.basedomain,
-		client:  pdns.NewClient(*cfg.server, *cfg.vhost, map[string]string{"X-API-Key": *cfg.apikey}, nil),
+		base:    *cfg.Basedomain,
+		client:  pdns.NewClient(*cfg.Server, *cfg.VHost, map[string]string{"X-API-Key": *cfg.APIKey}, nil),
 		metrics: metrics,
 	}
 
-	bz, err := execman.client.Zones.Get(*cfg.basedomain)
+	bz, err := execman.client.Zones.Get(*cfg.Basedomain)
 	if err != nil {
 		return nil
 	}
