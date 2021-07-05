@@ -58,4 +58,6 @@ deployItems:
             - kind: DNSProvider
               type: infoblox-dns
             - kind: DNSProvider
-              type: netlify-dns 
+              type: netlify-dns
+            - kind: DNSProvider
+              type: powerdns
