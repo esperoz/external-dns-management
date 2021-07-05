@@ -18,8 +18,6 @@
 package powerdns
 
 import (
-	//	"strconv"
-	//	"strings"
 	pdns "github.com/joeig/go-powerdns/v2"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -38,19 +36,19 @@ import (
 var _ raw.Executor = (*PowerDNSExecMan)(nil)
 
 type PowerDNSExecMan struct {
-	logger 		logger.LogContext,
-	base     	string
-	basezone 	*pdns.Zone
-	client   	*pdns.Client
-	metrics  	provider.Metrics
+	logger   logger.LogContext
+	base     string
+	basezone *pdns.Zone
+	client   *pdns.Client
+	metrics  provider.Metrics
 }
 
 func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider.Metrics) *PowerDNSExecMan {
 	execman := &PowerDNSExecMan{
-		logger: 	logger,
-		base:    	*cfg.basedomain,
-		client:  	pdns.NewClient(*cfg.server, *cfg.vhost, map[string]string{"X-API-Key": *cfg.apikey}, nil),
-		metrics: 	metrics,
+		logger:  logger,
+		base:    *cfg.basedomain,
+		client:  pdns.NewClient(*cfg.server, *cfg.vhost, map[string]string{"X-API-Key": *cfg.apikey}, nil),
+		metrics: metrics,
 	}
 
 	bz, err := execman.client.Zones.Get(*cfg.basedomain)
@@ -66,7 +64,7 @@ func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider
 func (exec *PowerDNSExecMan) CreateRecord(r raw.Record, zone provider.DNSHostedZone) error {
 	//this.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
 	exec.logger.Infof("PowerDNS createRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
-	
+
 	// really create record
 	return nil
 }
@@ -86,7 +84,7 @@ func (exec *PowerDNSExecMan) DeleteRecord(r raw.Record, zone provider.DNSHostedZ
 func (exec *PowerDNSExecMan) NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) (newrecord raw.Record) {
 	switch rtype {
 	case dns.RS_A:
-		
+
 	case dns.RS_CNAME:
 
 	case dns.RS_TXT:

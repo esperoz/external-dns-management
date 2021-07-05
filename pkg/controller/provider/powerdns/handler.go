@@ -15,27 +15,23 @@
  *
  */
 
+// to be removed - helm install charts/external-dns-management --name dns-controller --namespace=pdns --set configuration.identifier=ocp
+
 package powerdns
 
 import (
 	"context"
 	"fmt"
 
-	//	"encoding/json"
-	//	"fmt"
-	//	"io/ioutil"
-	//	"net/url"
-	//	"os"
-	//	"strconv"
 	pdns "github.com/joeig/go-powerdns/v2"
-	//	"github.com/aws/aws-sdk-go/aws/client"
+
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/external-dns-management/pkg/dns"
 	"github.com/gardener/external-dns-management/pkg/dns/provider"
 )
 
 type Handler struct {
-	provider.ZoneCache
+	cache provider.ZoneCache
 	provider.DefaultDNSHandler
 	config  provider.DNSHandlerConfig
 	execman *PowerDNSExecMan
@@ -44,9 +40,9 @@ type Handler struct {
 
 type PowerDNSConfig struct {
 	server     *string `json:"host,omitempty"`
-	vhost      *string `json:"host,omitempty"`
-	apikey     *string `json:"host,omitempty"`
-	basedomain *string `json:"host,omitempty"`
+	vhost      *string `json:"vhost,omitempty"`
+	apikey     *string `json:"apikey,omitempty"`
+	basedomain *string `json:"basedomain,omitempty"`
 }
 
 var _ provider.DNSHandler = &Handler{}
@@ -54,7 +50,9 @@ var _ provider.DNSHandler = &Handler{}
 func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) {
 
 	//get provider config
-	pdnsconfig = &PowerDNSConfig{}
+	pdnsconfig := &PowerDNSConfig{}
+
+	var err error
 
 	if err := config.FillRequiredProperty(&pdnsconfig.server, "SERVER", "server"); err != nil {
 		return nil, err
@@ -73,19 +71,19 @@ func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) 
 	}
 
 	// init handler
-	hndl := &Handler{
+	h := &Handler{
 		DefaultDNSHandler: provider.NewDefaultDNSHandler(TYPE_CODE),
 		config:            *config,
 		execman:           NewExecutor(config.Logger, pdnsconfig, config.Metrics),
 		ctx:               config.Context,
 	}
 
-	hndl.ZoneCache, err = provider.NewZoneCache(*config.CacheConfig.CopyWithDisabledZoneStateCache(), config.Metrics, nil, h.getZones, h.getZoneState)
+	h.cache, err = provider.NewZoneCache(*config.CacheConfig.CopyWithDisabledZoneStateCache(), config.Metrics, nil, h.getZones, h.getZoneState)
 	if err != nil {
 		return nil, err
 	}
 
-	return hndl, nil
+	return h, nil
 }
 
 func (h *Handler) getZones(cache provider.ZoneCache) (provider.DNSHostedZones, error) {
@@ -97,7 +95,7 @@ func (h *Handler) getZones(cache provider.ZoneCache) (provider.DNSHostedZones, e
 
 	zones := provider.DNSHostedZones{}
 	for _, z := range raw {
-		hostedZone := provider.NewDNSHostedZone(h.ProviderType(), *z.ID, dns.NormalizeHostname(z.Name), "", []string{}, false)
+		hostedZone := provider.NewDNSHostedZone(h.ProviderType(), *z.ID, dns.NormalizeHostname(*z.Name), "", []string{}, false)
 
 		// call GetZoneState for side effect to calculate forwarded domains
 		_, err := cache.GetZoneState(hostedZone)
@@ -118,10 +116,13 @@ func (h *Handler) getZoneState(zone provider.DNSHostedZone, cache provider.ZoneC
 	dnssets := dns.DNSSets{}
 
 	pdnszone, err := h.execman.client.Zones.Get(zone.Domain())
+	if err != nil {
+		return nil, err
+	}
 
 	for _, rrset := range pdnszone.RRsets {
 		fullName := fmt.Sprintf("%s.%s", *rrset.Name, zone.Domain())
-		switch rrset.Type {
+		switch *rrset.Type {
 		case pdns.RRTypeA:
 			rs := dns.NewRecordSet(dns.RS_A, int64(*rrset.TTL), nil)
 			for _, record := range rrset.Records {
@@ -165,4 +166,8 @@ func (h *Handler) GetZones() (provider.DNSHostedZones, error) {
 
 func (h *Handler) GetZoneState(zone provider.DNSHostedZone) (provider.DNSZoneState, error) {
 	return h.cache.GetZoneState(zone)
+}
+
+func (h *Handler) ReportZoneStateConflict(zone provider.DNSHostedZone, err error) bool {
+	return h.cache.ReportZoneStateConflict(zone, err)
 }
