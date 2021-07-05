@@ -26,10 +26,11 @@ def toCamelCase(name):
   str = str.replace("googleClouddns", "googleCloudDNS")
   str = str.replace("cloudflareDns", "cloudflareDNS")
   str = str.replace("infobloxDns", "infobloxDNS")
+  str = str.replace("powerDns", "powerDNS")
   return str
 
 excluded = {"name", "help", "identifier", "dry-run",
-  "cache-dir", "alicloud-dns.cache-dir", "aws-route53.cache-dir", "azure-dns.cache-dir", "google-clouddns.cache-dir",
+  "cache-dir", "alicloud-dns.cache-dir", "aws-route53.cache-dir", "azure-dns.cache-dir", "google-clouddns.cache-dir","powerdns.cache-dir",
   "openstack-designate.cache-dir", "cloudflare-dns.cache-dir", "infoblox-dns.cache-dir"}
 for line in options.split("\n"):
     m = re.match(r"\s+(?:-[^-]+)?--(\S+)\s", line)
