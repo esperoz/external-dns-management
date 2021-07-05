@@ -19,64 +19,150 @@ package powerdns
 
 import (
 	"context"
+	"fmt"
+
 	//	"encoding/json"
 	//	"fmt"
 	//	"io/ioutil"
 	//	"net/url"
 	//	"os"
 	//	"strconv"
-
+	pdns "github.com/joeig/go-powerdns/v2"
 	//	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/gardener/controller-manager-library/pkg/logger"
-	//	"github.com/pkg/errors"
-
-	//	"github.com/gardener/external-dns-management/pkg/dns"
+	"github.com/gardener/external-dns-management/pkg/dns"
 	"github.com/gardener/external-dns-management/pkg/dns/provider"
-	"github.com/gardener/external-dns-management/pkg/dns/provider/raw"
 )
 
 type Handler struct {
 	provider.ZoneCache
 	provider.DefaultDNSHandler
 	config  provider.DNSHandlerConfig
-	execman *PowerDNSExecMan //to be replaced
+	execman *PowerDNSExecMan
 	ctx     context.Context
 }
 
-// type InfobloxConfig struct {
-// 	Host            *string `json:"host,omitempty"`
-// 	Port            *int    `json:"port,omitempty"`
-// 	SSLVerify       *bool   `json:"sslVerify,omitempty"`
-// 	Version         *string `json:"version,omitempty"`
-// 	View            *string `json:"view,omitempty"`
-// 	PoolConnections *int    `json:"httpPoolConnections,omitempty"`
-// 	RequestTimeout  *int    `json:"httpRequestTimeout,omitempty"`
-// 	CaCert          *string `json:"caCert,omitempty"`
-// 	MaxResults      int     `json:"maxResults,omitempty"`
-// 	ProxyURL        *string `json:"proxyUrl,omitempty"`
-// }
+type PowerDNSConfig struct {
+	server     *string `json:"host,omitempty"`
+	vhost      *string `json:"host,omitempty"`
+	apikey     *string `json:"host,omitempty"`
+	basedomain *string `json:"host,omitempty"`
+}
 
 var _ provider.DNSHandler = &Handler{}
 
 func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) {
 
-	//NewExecutor()
+	//get provider config
+	pdnsconfig = &PowerDNSConfig{}
 
-	return nil, nil
+	if err := config.FillRequiredProperty(&pdnsconfig.server, "SERVER", "server"); err != nil {
+		return nil, err
+	}
+
+	if err := config.FillRequiredProperty(&pdnsconfig.vhost, "VHOST", "vhost"); err != nil {
+		return nil, err
+	}
+
+	if err := config.FillRequiredProperty(&pdnsconfig.apikey, "APIKEY", "apikey"); err != nil {
+		return nil, err
+	}
+
+	if err := config.FillRequiredProperty(&pdnsconfig.basedomain, "BASEDOMAIN", "basedomain"); err != nil {
+		return nil, err
+	}
+
+	// init handler
+	hndl := &Handler{
+		DefaultDNSHandler: provider.NewDefaultDNSHandler(TYPE_CODE),
+		config:            *config,
+		execman:           NewExecutor(config.Logger, pdnsconfig, config.Metrics),
+		ctx:               config.Context,
+	}
+
+	hndl.ZoneCache, err = provider.NewZoneCache(*config.CacheConfig.CopyWithDisabledZoneStateCache(), config.Metrics, nil, h.getZones, h.getZoneState)
+	if err != nil {
+		return nil, err
+	}
+
+	return hndl, nil
 }
 
 func (h *Handler) getZones(cache provider.ZoneCache) (provider.DNSHostedZones, error) {
 
-	return nil, nil
+	raw, err := h.execman.client.Zones.List()
+	if err != nil {
+		return nil, err
+	}
+
+	zones := provider.DNSHostedZones{}
+	for _, z := range raw {
+		hostedZone := provider.NewDNSHostedZone(h.ProviderType(), *z.ID, dns.NormalizeHostname(z.Name), "", []string{}, false)
+
+		// call GetZoneState for side effect to calculate forwarded domains
+		_, err := cache.GetZoneState(hostedZone)
+		if err == nil {
+			forwarded := cache.GetHandlerData().(*provider.ForwardedDomainsHandlerData).GetForwardedDomains(hostedZone.Id())
+			if forwarded != nil {
+				hostedZone = provider.CopyDNSHostedZone(hostedZone, forwarded)
+			}
+		}
+
+		zones = append(zones, hostedZone)
+	}
+
+	return zones, nil
 }
 
 func (h *Handler) getZoneState(zone provider.DNSHostedZone, cache provider.ZoneCache) (provider.DNSZoneState, error) {
+	dnssets := dns.DNSSets{}
 
-	return nil, nil
+	pdnszone, err := h.execman.client.Zones.Get(zone.Domain())
+
+	for _, rrset := range pdnszone.RRsets {
+		fullName := fmt.Sprintf("%s.%s", *rrset.Name, zone.Domain())
+		switch rrset.Type {
+		case pdns.RRTypeA:
+			rs := dns.NewRecordSet(dns.RS_A, int64(*rrset.TTL), nil)
+			for _, record := range rrset.Records {
+				rs.Add(&dns.Record{Value: *record.Content})
+			}
+			dnssets.AddRecordSetFromProvider(fullName, rs)
+
+		case pdns.RRTypeCNAME:
+			rs := dns.NewRecordSet(dns.RS_CNAME, int64(*rrset.TTL), nil)
+			for _, record := range rrset.Records {
+				rs.Add(&dns.Record{Value: *record.Content})
+			}
+			dnssets.AddRecordSetFromProvider(fullName, rs)
+
+		case pdns.RRTypeTXT:
+			rs := dns.NewRecordSet(dns.RS_TXT, int64(*rrset.TTL), nil)
+			for _, record := range rrset.Records {
+				rs.Add(&dns.Record{Value: *record.Content})
+			}
+			dnssets.AddRecordSetFromProvider(fullName, rs)
+
+		}
+	}
+
+	return provider.NewDNSZoneState(dnssets), nil
 }
 
 func (h *Handler) ExecuteRequests(logger logger.LogContext, zone provider.DNSHostedZone, state provider.DNSZoneState, reqs []*provider.ChangeRequest) error {
-	err := raw.ExecuteRequests(logger, &h.config, h.execman, zone, state, reqs)
-	h.ApplyRequests(logger, err, zone, reqs)
-	return err
+
+	// tbd
+	return nil
+}
+
+func (h *Handler) Release() {
+	h.cache.Release()
+}
+
+func (h *Handler) GetZones() (provider.DNSHostedZones, error) {
+	return h.cache.GetZones()
+}
+
+func (h *Handler) GetZoneState(zone provider.DNSHostedZone) (provider.DNSZoneState, error) {
+	return h.cache.GetZoneState(zone)
 }

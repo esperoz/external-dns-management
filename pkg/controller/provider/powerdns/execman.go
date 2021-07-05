@@ -22,6 +22,7 @@ import (
 	//	"strings"
 	pdns "github.com/joeig/go-powerdns/v2"
 
+	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/external-dns-management/pkg/dns"
 	"github.com/gardener/external-dns-management/pkg/dns/provider"
 	"github.com/gardener/external-dns-management/pkg/dns/provider/raw"
@@ -34,53 +35,65 @@ import (
 
 // 	NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) Record
 // }
+var _ raw.Executor = (*PowerDNSExecMan)(nil)
 
 type PowerDNSExecMan struct {
-	base     string
-	basezone *pdns.Zone
-	client   *pdns.Client
+	logger 		logger.LogContext,
+	base     	string
+	basezone 	*pdns.Zone
+	client   	*pdns.Client
+	metrics  	provider.Metrics
 }
 
-func NewExecutor(basedomain string, srv string, vhost string, apikey string) *PowerDNSExecMan {
+func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider.Metrics) *PowerDNSExecMan {
 	execman := &PowerDNSExecMan{
-		base:   basedomain,
-		client: pdns.NewClient(srv, vhost, map[string]string{"X-API-Key": apikey}, nil),
+		logger: 	logger,
+		base:    	*cfg.basedomain,
+		client:  	pdns.NewClient(*cfg.server, *cfg.vhost, map[string]string{"X-API-Key": *cfg.apikey}, nil),
+		metrics: 	metrics,
 	}
 
-	bz, err := execman.client.Zones.Get(basedomain)
+	bz, err := execman.client.Zones.Get(*cfg.basedomain)
 	if err != nil {
 		return nil
 	}
 
 	execman.basezone = bz
-
+	//pdns.RRTypeA
 	return execman
 }
 
-func (this *PowerDNSExecMan) CreateRecord(r raw.Record, zone provider.DNSHostedZone) error {
-
+func (exec *PowerDNSExecMan) CreateRecord(r raw.Record, zone provider.DNSHostedZone) error {
+	//this.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
+	exec.logger.Infof("PowerDNS createRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
+	
+	// really create record
 	return nil
 }
 
-func (this *PowerDNSExecMan) UpdateRecord(r raw.Record, zone provider.DNSHostedZone) error {
-
+func (exec *PowerDNSExecMan) UpdateRecord(r raw.Record, zone provider.DNSHostedZone) error {
+	exec.logger.Infof("PowerDNS updateRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
+	// really update record
 	return nil
 }
 
-func (this *PowerDNSExecMan) DeleteRecord(r raw.Record, zone provider.DNSHostedZone) error {
-
+func (exec *PowerDNSExecMan) DeleteRecord(r raw.Record, zone provider.DNSHostedZone) error {
+	exec.logger.Infof("PowerDNS deleteRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
+	// really delete record
 	return nil
 }
 
-func (this *PowerDNSExecMan) NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) (newrecord raw.Record) {
+func (exec *PowerDNSExecMan) NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) (newrecord raw.Record) {
 	switch rtype {
 	case dns.RS_A:
-
+		
 	case dns.RS_CNAME:
 
 	case dns.RS_TXT:
 
 	}
+
+	exec.logger.Infof("Newrecord - %s - fqdn: %s - val: %s - zone: %s", rtype, fqdn, value, zone.Domain())
 
 	return
 }
