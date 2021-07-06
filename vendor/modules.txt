@@ -257,6 +257,9 @@ github.com/inconshreveable/mousetrap
 github.com/infobloxopen/infoblox-go-client
 # github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
+# github.com/joeig/go-powerdns/v2 v2.4.1
+## explicit
+github.com/joeig/go-powerdns/v2
 # github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3

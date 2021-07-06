@@ -17,6 +17,7 @@ require (
 	github.com/gophercloud/gophercloud v0.18.0
 	github.com/gophercloud/utils v0.0.0-20190527093828-25f1b77b8c03
 	github.com/infobloxopen/infoblox-go-client v1.1.0
+	github.com/joeig/go-powerdns/v2 v2.4.1
 	github.com/miekg/dns v1.1.14
 	github.com/netlify/open-api v1.1.0
 	github.com/onsi/ginkgo v1.14.1

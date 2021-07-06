@@ -64,7 +64,6 @@ func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider
 func (exec *PowerDNSExecMan) CreateRecord(r raw.Record, zone provider.DNSHostedZone) error {
 	//this.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
 	exec.logger.Infof("PowerDNS createRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
-
 	// really create record
 	return nil
 }
