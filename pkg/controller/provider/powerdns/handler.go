@@ -28,6 +28,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/external-dns-management/pkg/dns"
 	"github.com/gardener/external-dns-management/pkg/dns/provider"
+	"github.com/gardener/external-dns-management/pkg/dns/provider/raw"
 )
 
 type Handler struct {
@@ -78,20 +79,24 @@ func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) 
 		ctx:               config.Context,
 	}
 
+	// TODO: check zone existence and create new if any
+
 	forwardedDomains := provider.NewForwardedDomainsHandlerData()
 	h.cache, err = provider.NewZoneCache(config.CacheConfig, config.Metrics, forwardedDomains, h.getZones, h.getZoneState)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Infof("PowerDNS handler for %s", pdnsconfig.Basedomain)
+	logger.Infof("PowerDNS handler for %s", *pdnsconfig.Basedomain)
 
 	return h, nil
 }
 
 func (h *Handler) getZones(cache provider.ZoneCache) (provider.DNSHostedZones, error) {
 
+	h.config.RateLimiter.Accept()
 	zonelist, err := h.execman.client.Zones.List()
+	h.config.Metrics.AddGenericRequests(provider.M_LISTZONES, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -148,12 +153,27 @@ func (h *Handler) getZoneState(zone provider.DNSHostedZone, cache provider.ZoneC
 
 func (h *Handler) ExecuteRequests(logger logger.LogContext, zone provider.DNSHostedZone, state provider.DNSZoneState, reqs []*provider.ChangeRequest) error {
 
-	for _, r := range reqs {
-		logger.Infof("PowerDNS got request for zone %s to do %s", zone.Domain(), r.Action)
-	}
+	// var err error //temp solution
 
-	// tbd
-	return nil
+	// //rs := h.execman.client.Records
+	// for _, r := range reqs {
+	// 	logger.Infof("PowerDNS got request for zone %s to do %s", zone.Domain(), r.Action)
+
+	// 	// switch r.Action {
+	// 	// 	case "create" :
+	// 	// 		err = rs.Add(zone.Domain(),r.Addition.Name,pdns.RRType(r.Type))
+	// 	// 	case "update" :
+
+	// 	// 	case "delete" :
+
+	// 	// }
+	// }
+
+	// return err
+
+	err := raw.ExecuteRequests(logger, &h.config, h.execman, zone, state, reqs)
+	h.cache.ApplyRequests(logger, err, zone, reqs)
+	return err
 }
 
 func (h *Handler) Release() {

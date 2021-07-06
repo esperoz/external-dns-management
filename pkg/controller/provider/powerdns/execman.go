@@ -65,19 +65,19 @@ func (exec *PowerDNSExecMan) CreateRecord(r raw.Record, zone provider.DNSHostedZ
 	//this.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
 	exec.logger.Infof("PowerDNS createRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
 	// really create record
-	return nil
+	return exec.client.Records.Add(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()), uint32(r.GetTTL()), []string{r.GetValue()})
 }
 
 func (exec *PowerDNSExecMan) UpdateRecord(r raw.Record, zone provider.DNSHostedZone) error {
 	exec.logger.Infof("PowerDNS updateRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
 	// really update record
-	return nil
+	return exec.client.Records.Change(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()), uint32(r.GetTTL()), []string{r.GetValue()})
 }
 
 func (exec *PowerDNSExecMan) DeleteRecord(r raw.Record, zone provider.DNSHostedZone) error {
 	exec.logger.Infof("PowerDNS deleteRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
 	// really delete record
-	return nil
+	return exec.client.Records.Delete(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()))
 }
 
 func (exec *PowerDNSExecMan) NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) (newrecord raw.Record) {
