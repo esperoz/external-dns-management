@@ -15,7 +15,7 @@
  *
  */
 
-// to be removed - helm install charts/external-dns-management --name dns-controller --namespace=pdns --set configuration.identifier=ocp
+// to be removed - helm install dns-controller charts/external-dns-management --namespace=pdns --set configuration.identifier=ocp
 
 package powerdns
 
@@ -78,34 +78,30 @@ func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) 
 		ctx:               config.Context,
 	}
 
-	h.cache, err = provider.NewZoneCache(*config.CacheConfig.CopyWithDisabledZoneStateCache(), config.Metrics, nil, h.getZones, h.getZoneState)
+	forwardedDomains := provider.NewForwardedDomainsHandlerData()
+	h.cache, err = provider.NewZoneCache(config.CacheConfig, config.Metrics, forwardedDomains, h.getZones, h.getZoneState)
 	if err != nil {
 		return nil, err
 	}
+
+	logger.Infof("PowerDNS handler for %s", pdnsconfig.Basedomain)
 
 	return h, nil
 }
 
 func (h *Handler) getZones(cache provider.ZoneCache) (provider.DNSHostedZones, error) {
 
-	raw, err := h.execman.client.Zones.List()
+	zonelist, err := h.execman.client.Zones.List()
 	if err != nil {
 		return nil, err
 	}
 
 	zones := provider.DNSHostedZones{}
-	for _, z := range raw {
-		hostedZone := provider.NewDNSHostedZone(h.ProviderType(), *z.ID, dns.NormalizeHostname(*z.Name), "", []string{}, false)
 
-		// call GetZoneState for side effect to calculate forwarded domains
-		_, err := cache.GetZoneState(hostedZone)
-		if err == nil {
-			forwarded := cache.GetHandlerData().(*provider.ForwardedDomainsHandlerData).GetForwardedDomains(hostedZone.Id())
-			if forwarded != nil {
-				hostedZone = provider.CopyDNSHostedZone(hostedZone, forwarded)
-			}
-		}
-
+	for _, z := range zonelist {
+		logger.Infof("PowerDNS got zone %s", *z.Name)
+		forwarded := []string{}
+		hostedZone := provider.NewDNSHostedZone(h.ProviderType(), *z.ID, dns.NormalizeHostname(*z.Name), *z.Name, forwarded, false)
 		zones = append(zones, hostedZone)
 	}
 
@@ -151,6 +147,10 @@ func (h *Handler) getZoneState(zone provider.DNSHostedZone, cache provider.ZoneC
 }
 
 func (h *Handler) ExecuteRequests(logger logger.LogContext, zone provider.DNSHostedZone, state provider.DNSZoneState, reqs []*provider.ChangeRequest) error {
+
+	for _, r := range reqs {
+		logger.Infof("PowerDNS got request for zone %s to do %s", zone.Domain(), r.Action)
+	}
 
 	// tbd
 	return nil
