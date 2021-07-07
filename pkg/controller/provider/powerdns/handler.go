@@ -149,7 +149,8 @@ func (h *Handler) GetZones() (provider.DNSHostedZones, error) {
 }
 
 func (h *Handler) GetZoneState(zone provider.DNSHostedZone) (provider.DNSZoneState, error) {
-	return h.cache.GetZoneState(zone)
+	//will use the same func
+	return h.getZoneState(zone, h.cache)
 }
 
 func (h *Handler) ReportZoneStateConflict(zone provider.DNSHostedZone, err error) bool {
