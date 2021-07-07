@@ -26,13 +26,6 @@ import (
 	"github.com/gardener/external-dns-management/pkg/dns/provider/raw"
 )
 
-//  type Executor interface {
-// 	CreateRecord(r Record, zone provider.DNSHostedZone) error
-// 	UpdateRecord(r Record, zone provider.DNSHostedZone) error
-// 	DeleteRecord(r Record, zone provider.DNSHostedZone) error
-
-// 	NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) Record
-// }
 var _ raw.Executor = (*PowerDNSExecMan)(nil)
 
 type PowerDNSExecMan struct {
@@ -42,6 +35,16 @@ type PowerDNSExecMan struct {
 	client   *pdns.Client
 	metrics  provider.Metrics
 }
+
+//  PowerDNSExecMan must realize Executor interface
+
+//  type Executor interface {
+// 	CreateRecord(r Record, zone provider.DNSHostedZone) error
+// 	UpdateRecord(r Record, zone provider.DNSHostedZone) error
+// 	DeleteRecord(r Record, zone provider.DNSHostedZone) error
+
+// 	NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) Record
+// }
 
 func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider.Metrics) *PowerDNSExecMan {
 	execman := &PowerDNSExecMan{

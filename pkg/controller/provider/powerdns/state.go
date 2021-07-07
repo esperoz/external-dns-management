@@ -18,7 +18,6 @@
 package powerdns
 
 import (
-	//	"github.com/joeig/go-powerdns/v2"
 	pdns "github.com/joeig/go-powerdns/v2"
 
 	"github.com/gardener/external-dns-management/pkg/dns/provider/raw"

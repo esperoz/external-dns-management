@@ -15,16 +15,12 @@
  *
  */
 
-// to be removed - helm install dns-controller charts/external-dns-management --namespace=pdns --set configuration.identifier=ocp
+// to be removed - helm install dns-controller charts/external-dns-management --namespace=external-dns-management --set configuration.identifier=sks
 
 package powerdns
 
 import (
 	"context"
-	//	"fmt"
-
-	//	pdns "github.com/joeig/go-powerdns/v2"
-	//	"github.com/netlify/open-api/go/models"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/external-dns-management/pkg/dns"
@@ -50,12 +46,10 @@ type PowerDNSConfig struct {
 var _ provider.DNSHandler = &Handler{}
 
 func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) {
-
-	//get provider config
 	pdnsconfig := &PowerDNSConfig{}
 
-	var err error
-
+	// get provider config
+	// TODO: move everything except apikey to the .spec from secret
 	if err := config.FillRequiredProperty(&pdnsconfig.Server, "SERVER", "server"); err != nil {
 		return nil, err
 	}
@@ -82,6 +76,7 @@ func NewHandler(config *provider.DNSHandlerConfig) (provider.DNSHandler, error) 
 
 	// TODO: check zone existence and create new if any
 
+	var err error
 	forwardedDomains := provider.NewForwardedDomainsHandlerData()
 	h.cache, err = provider.NewZoneCache(config.CacheConfig, config.Metrics, forwardedDomains, h.getZones, h.getZoneState)
 	if err != nil {
