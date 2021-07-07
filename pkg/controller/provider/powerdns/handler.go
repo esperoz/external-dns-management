@@ -21,9 +21,10 @@ package powerdns
 
 import (
 	"context"
-	"fmt"
+	//	"fmt"
 
-	pdns "github.com/joeig/go-powerdns/v2"
+	//	pdns "github.com/joeig/go-powerdns/v2"
+	//	"github.com/netlify/open-api/go/models"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/external-dns-management/pkg/dns"
@@ -114,41 +115,53 @@ func (h *Handler) getZones(cache provider.ZoneCache) (provider.DNSHostedZones, e
 }
 
 func (h *Handler) getZoneState(zone provider.DNSHostedZone, cache provider.ZoneCache) (provider.DNSZoneState, error) {
-	dnssets := dns.DNSSets{}
+	//dnssets := dns.DNSSets{}
 
 	pdnszone, err := h.execman.client.Zones.Get(zone.Domain())
 	if err != nil {
 		return nil, err
 	}
 
+	//var r models.DNSRecord
+	state := raw.NewState()
 	for _, rrset := range pdnszone.RRsets {
-		fullName := fmt.Sprintf("%s.%s", *rrset.Name, zone.Domain())
-		switch *rrset.Type {
-		case pdns.RRTypeA:
-			rs := dns.NewRecordSet(dns.RS_A, int64(*rrset.TTL), nil)
-			for _, record := range rrset.Records {
-				rs.Add(&dns.Record{Value: *record.Content})
-			}
-			dnssets.AddRecordSetFromProvider(fullName, rs)
+		//var r Record
+		state.AddRecord(NewRecordFromRecordset(&rrset).Copy())
 
-		case pdns.RRTypeCNAME:
-			rs := dns.NewRecordSet(dns.RS_CNAME, int64(*rrset.TTL), nil)
-			for _, record := range rrset.Records {
-				rs.Add(&dns.Record{Value: *record.Content})
-			}
-			dnssets.AddRecordSetFromProvider(fullName, rs)
+		// fullName := fmt.Sprintf("%s.%s", *rrset.Name, zone.Domain())
+		// switch *rrset.Type {
+		// case pdns.RRTypeA:
+		// 	rs := dns.NewRecordSet(dns.RS_A, int64(*rrset.TTL), nil)
+		// 	for _, record := range rrset.Records {
+		// 		rs.Add(&dns.Record{Value: *record.Content})
+		// 	}
+		// 	dnssets.AddRecordSetFromProvider(fullName, rs)
 
-		case pdns.RRTypeTXT:
-			rs := dns.NewRecordSet(dns.RS_TXT, int64(*rrset.TTL), nil)
-			for _, record := range rrset.Records {
-				rs.Add(&dns.Record{Value: *record.Content})
-			}
-			dnssets.AddRecordSetFromProvider(fullName, rs)
+		// case pdns.RRTypeCNAME:
+		// 	rs := dns.NewRecordSet(dns.RS_CNAME, int64(*rrset.TTL), nil)
+		// 	for _, record := range rrset.Records {
+		// 		rs.Add(&dns.Record{Value: *record.Content})
+		// 	}
+		// 	dnssets.AddRecordSetFromProvider(fullName, rs)
 
-		}
+		// case pdns.RRTypeTXT:
+		// 	rs := dns.NewRecordSet(dns.RS_TXT, int64(*rrset.TTL), nil)
+		// 	for _, record := range rrset.Records {
+		// 		rs.Add(&dns.Record{Value: *record.Content})
+		// 	}
+		// 	dnssets.AddRecordSetFromProvider(fullName, rs)
+
+		// }
 	}
 
-	return provider.NewDNSZoneState(dnssets), nil
+	// return provider.NewDNSZoneState(dnssets), nil
+
+	// rec := raw.Record{}
+	// state.AddRecord()
+	//state.AddRecord()	dnssets.Clone()
+
+	state.CalculateDNSSets()
+	return state, nil
 }
 
 func (h *Handler) ExecuteRequests(logger logger.LogContext, zone provider.DNSHostedZone, state provider.DNSZoneState, reqs []*provider.ChangeRequest) error {
@@ -170,7 +183,11 @@ func (h *Handler) ExecuteRequests(logger logger.LogContext, zone provider.DNSHos
 	// }
 
 	// return err
+	// var one *provider.DefaultDNSZoneState
+	// var two *raw.ZoneState
+	// var three *provider.DNSZoneState
 
+	//err := h.executeRequests(logger, zone, state, reqs)
 	err := raw.ExecuteRequests(logger, &h.config, h.execman, zone, state, reqs)
 	h.cache.ApplyRequests(logger, err, zone, reqs)
 	return err

@@ -80,17 +80,26 @@ func (exec *PowerDNSExecMan) DeleteRecord(r raw.Record, zone provider.DNSHostedZ
 	return exec.client.Records.Delete(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()))
 }
 
-func (exec *PowerDNSExecMan) NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) (newrecord raw.Record) {
-	switch rtype {
-	case dns.RS_A:
-
-	case dns.RS_CNAME:
-
-	case dns.RS_TXT:
-
-	}
+func (exec *PowerDNSExecMan) NewRecord(fqdn, rtype, value string, zone provider.DNSHostedZone, ttl int64) raw.Record {
 
 	exec.logger.Infof("Newrecord - %s - fqdn: %s - val: %s - zone: %s", rtype, fqdn, value, zone.Domain())
 
-	return
+	ttlv := uint32(ttl)
+	rset := &pdns.RRset{
+		Name: &fqdn,
+		TTL:  &ttlv,
+	}
+
+	switch rtype {
+	case dns.RS_A:
+		rset.Type = pdns.RRTypePtr(pdns.RRTypeA)
+	case dns.RS_CNAME:
+		rset.Type = pdns.RRTypePtr(pdns.RRTypeCNAME)
+	case dns.RS_TXT:
+		rset.Type = pdns.RRTypePtr(pdns.RRTypeTXT)
+	}
+
+	rset.Records = append(rset.Records, pdns.Record{Content: &value})
+
+	return NewRecordFromRecordset(rset)
 }
