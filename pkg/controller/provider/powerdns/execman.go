@@ -52,31 +52,49 @@ func NewExecutor(logger logger.LogContext, cfg *PowerDNSConfig, metrics provider
 	}
 
 	bz, err := execman.client.Zones.Get(*cfg.Basedomain)
+	// Warning! If can't find basedomain - must fail.
+	// Otherwise we will be unable to create managed zones
 	if err != nil {
 		return nil
 	}
 
 	execman.basezone = bz
-	//pdns.RRTypeA
 	return execman
 }
 
+func (exec *PowerDNSExecMan) CreateZoneFromBase(newzone string) error {
+	nz := &pdns.Zone{
+		ID:          &newzone,
+		Name:        &newzone,
+		Type:        exec.basezone.Type,
+		Nsec3Param:  exec.basezone.Nsec3Param,
+		Nsec3Narrow: exec.basezone.Nsec3Narrow,
+		Nameservers: exec.basezone.Nameservers,
+		DNSsec:      exec.basezone.DNSsec,
+		SOAEdit:     exec.basezone.SOAEdit,
+		SOAEditAPI:  exec.basezone.SOAEditAPI,
+	}
+
+	_, err := exec.client.Zones.Add(nz)
+
+	return err
+}
+
 func (exec *PowerDNSExecMan) CreateRecord(r raw.Record, zone provider.DNSHostedZone) error {
-	//this.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
 	exec.logger.Infof("PowerDNS createRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
-	// really create record
+	exec.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
 	return exec.client.Records.Add(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()), uint32(r.GetTTL()), []string{r.GetValue()})
 }
 
 func (exec *PowerDNSExecMan) UpdateRecord(r raw.Record, zone provider.DNSHostedZone) error {
 	exec.logger.Infof("PowerDNS updateRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
-	// really update record
+	exec.metrics.AddZoneRequests(zone.Id(), provider.M_CREATERECORDS, 1)
 	return exec.client.Records.Change(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()), uint32(r.GetTTL()), []string{r.GetValue()})
 }
 
 func (exec *PowerDNSExecMan) DeleteRecord(r raw.Record, zone provider.DNSHostedZone) error {
 	exec.logger.Infof("PowerDNS deleteRecord %s with ip %s type %s at zone %s", r.GetDNSName(), r.GetValue(), r.GetType(), zone.Id())
-	// really delete record
+	exec.metrics.AddZoneRequests(zone.Id(), provider.M_DELETERECORDS, 1)
 	return exec.client.Records.Delete(zone.Domain(), r.GetDNSName(), pdns.RRType(r.GetType()))
 }
 
